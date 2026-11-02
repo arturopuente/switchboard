@@ -1,5 +1,26 @@
 ;;; switchboard.el --- A vertical list of Claude Code, Codex and Pi sessions -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 Arturo Puente
+
+;; Author: Arturo Puente
+;; URL: https://github.com/arturopuente/switchboard
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "30.1") (ghostel "0.50.0") (transient "0.7"))
+;; Keywords: tools, processes
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 ;;; Commentary:
 
 ;; Each agent runs in its own ghostel terminal, usually in its own git
@@ -406,9 +427,17 @@ If it has exited since, offer to resume it."
                       switchboard-names)
       (format "agent-%d" (1+ (length switchboard--sessions)))))
 
+(defun switchboard--current-project ()
+  "The current project's root, or nil."
+  (require 'project)
+  (if (fboundp 'doom-project-root)
+      (doom-project-root)
+    (when-let* ((project (project-current)))
+      (project-root project))))
+
 (defun switchboard--read-project ()
   (require 'project)
-  (let* ((here (and (fboundp 'doom-project-root) (doom-project-root)))
+  (let* ((here (switchboard--current-project))
          (roots (delete-dups
                  (mapcar (lambda (d) (abbreviate-file-name (file-name-as-directory d)))
                          (append (and here (list here))
@@ -719,6 +748,9 @@ With evil the keys apply in insert state only. Setting this with
     (ghostel-exec buf program (cdr argv))
     (with-current-buffer buf
       (setq-local switchboard--session s
+                  ;; Claude Code pads its result lines with no-break spaces,
+                  ;; which Emacs would underline.
+                  nobreak-char-display nil
                   ghostel-kill-buffer-on-exit nil
                   header-line-format '(:eval switchboard--terminal-header-image)
                   ;; ESC interrupts the agent.  evil-ghostel's `auto' only sends
@@ -765,7 +797,7 @@ of your own instead."
   "(ROOT DIR BRANCH) for a new session: the row at point's, or this project."
   (let ((here (and (eq (current-buffer) (get-buffer switchboard--buffer-name))
                    (get-text-property (point) 'switchboard-session)))
-        (project (and (fboundp 'doom-project-root) (doom-project-root))))
+        (project (switchboard--current-project)))
     (cond (here (list (switchboard-session-root here) (switchboard-session-dir here)
                       (switchboard-session-branch here)))
           (project (list (file-name-as-directory (expand-file-name project)))))))
@@ -2890,7 +2922,7 @@ has focus; another session on screen (in a split) only gets an outline."
                                     (mapconcat #'switchboard--title waiting ", "))
                             size (- width 60))
                            14 (+ (/ h 2.0) (* 0.35 size)) size color)
-    (switchboard--svg-text svg "M-n" (- width 14) (+ (/ h 2.0) (* 0.35 size))
+    (switchboard--svg-text svg "n" (- width 14) (+ (/ h 2.0) (* 0.35 size))
                            size color :text-anchor "end" :opacity 0.7)
     (switchboard--image svg)))
 
@@ -3309,8 +3341,9 @@ After a restart, saved sessions come back as EXITED; r or
   (interactive)
   (unless switchboard--sessions
     (when-let* ((added (switchboard--load)))
-      (message "Restored %d saved session%s; SPC e r resumes them all"
-               (length added) (if (cdr added) "s" ""))))
+      (message "Restored %d saved session%s; %s resumes them all"
+               (length added) (if (cdr added) "s" "")
+               (substitute-command-keys "\\[switchboard-resume-all]"))))
   (select-window (switchboard--display-sidebar)))
 
 ;;;###autoload
@@ -3373,7 +3406,8 @@ touch the agent's status.")
                            process-environment)))
         (ghostel-exec buf program args))
       (with-current-buffer buf
-        (setq-local switchboard--drawer-of s)
+        (setq-local switchboard--drawer-of s
+                    nobreak-char-display nil)
         (switchboard-terminal-mode)))
     buf))
 
@@ -3428,7 +3462,8 @@ session it maximizes the window instead (`doom/window-maximize-buffer')."
      ;; Agent alone: bring its shell back below.
      (agent-w
       (unless (and shell (process-live-p (get-buffer-process shell)))
-        (user-error "No shell to split with; SPC e s opens one"))
+        (user-error (substitute-command-keys
+                     "No shell to split with; \\[switchboard-shell] opens one")))
       (let ((win (split-window agent-w (- (max 6 (round (* switchboard-drawer-height
                                                             (window-total-height agent-w)))))
                                'below)))
@@ -3511,6 +3546,7 @@ last rows; this puts it right whenever you switch to it."
   (when (buffer-live-p (switchboard-session-buffer s))
     (switchboard--show s)))
 
+;;;###autoload
 (defun switchboard-next-session (&optional n)
   "Show the Nth next session in list order, like switching tabs.
 In the list it moves the selection and previews; in a session it shows
@@ -3532,6 +3568,7 @@ the next one in the same window. Anywhere else it is `next-buffer'."
             (switchboard--show next t)
           (switchboard-peek next)))))))
 
+;;;###autoload
 (defun switchboard-previous-session (&optional n)
   "Show the Nth previous session in list order; see `switchboard-next-session'."
   (interactive "p")
@@ -3829,6 +3866,8 @@ On a recently closed one, reopen it."
 (defun switchboard-magit (s)
   "Open magit-status for S's worktree in the main window."
   (interactive (list (switchboard--at-point)))
+  (unless (fboundp 'magit-status-setup-buffer)
+    (user-error "Magit isn't installed"))
   (select-window (switchboard--main-window))
   (magit-status-setup-buffer (switchboard--work-dir s)))
 
