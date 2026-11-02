@@ -101,6 +101,14 @@
   "Width of the session list window, in columns."
   :type 'natnum)
 
+;;;###autoload
+(defcustom switchboard-open-at-startup nil
+  "Non-nil means open the session list when Emacs starts with nothing to open.
+That is, when no file or directory was given on the command line, such as
+when you start it from the Dock.  Saved sessions show as EXITED until you
+resume them."
+  :type 'boolean)
+
 (defcustom switchboard-names
   '("heron" "otter" "lynx" "wren" "moth" "ibex" "newt" "kite" "vole" "puffin"
     "stoat" "finch" "marten" "plover" "tern" "gecko" "egret" "shrike")
@@ -3345,6 +3353,20 @@ After a restart, saved sessions come back as EXITED; r or
                (length added) (if (cdr added) "s" "")
                (substitute-command-keys "\\[switchboard-resume-all]"))))
   (select-window (switchboard--display-sidebar)))
+
+;;;###autoload
+(defun switchboard-maybe-open ()
+  "Open the session list if `switchboard-open-at-startup' says to.
+Emacs must have a frame to show it in, and no file or directory to open."
+  (when (and switchboard-open-at-startup
+             (not noninteractive)
+             (not (daemonp))
+             (not (cl-some (lambda (arg) (not (string-prefix-p "-" arg)))
+                           (cdr command-line-args))))
+    (switchboard)))
+
+;; Checks the setting first, so that leaving it off doesn't load this file.
+;;;###autoload (add-hook 'window-setup-hook (lambda () (when switchboard-open-at-startup (switchboard-maybe-open))) 90)
 
 ;;;###autoload
 (defun switchboard-toggle-focus ()

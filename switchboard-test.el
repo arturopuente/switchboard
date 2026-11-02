@@ -1,6 +1,6 @@
 ;;; switchboard-test.el --- Tests for Switchboard's hook handling -*- lexical-binding: t; -*-
 
-;; Run with ./test.sh, which puts Doom's packages on the load path.
+;; Run with ./test.sh.
 ;; These feed `switchboard-hook' the events Claude Code, Codex and Pi send and
 ;; check the state a session ends up in, without a terminal or a real agent.
 
@@ -1643,6 +1643,32 @@ recorded in `switchboard-test--notified'."
                    (expand-file-name "uncommitted.txt"
                                      (switchboard-session-dir (switchboard-test--helper "w")))))
       (delete-directory switchboard-worktree-directory t))))
+
+(ert-deftest switchboard-test-opens-at-startup-only-when-asked-with-nothing-to-open ()
+  (cl-flet ((opens (setting args)
+              (let ((opened nil)
+                    (switchboard-open-at-startup setting)
+                    (command-line-args (cons "emacs" args))
+                    (noninteractive nil))
+                (cl-letf (((symbol-function 'switchboard) (lambda () (setq opened t)))
+                          ((symbol-function 'daemonp) #'ignore))
+                  (switchboard-maybe-open))
+                opened)))
+    (should-not (opens nil nil))             ; off by default, even with no path
+    (should (opens t nil))
+    (should (opens t '("--debug-init")))     ; a flag is not a path
+    (should-not (opens t '("notes.org")))
+    (should-not (opens t '("--debug-init" "~/dev/")))))
+
+(ert-deftest switchboard-test-does-not-open-at-startup-in-a-daemon ()
+  (let ((opened nil)
+        (switchboard-open-at-startup t)
+        (command-line-args '("emacs"))
+        (noninteractive nil))
+    (cl-letf (((symbol-function 'switchboard) (lambda () (setq opened t)))
+              ((symbol-function 'daemonp) (lambda () t)))
+      (switchboard-maybe-open))
+    (should-not opened)))
 
 (provide 'switchboard-test)
 ;;; switchboard-test.el ends here

@@ -133,6 +133,12 @@ open -W -a "$(brew --prefix terminal-notifier)/terminal-notifier.app" \
 
 `M-x switchboard` opens the list. Press `c` to start a session and `?` to see every key.
 
+To have Emacs open on the list when it starts without a file or directory to open, such as from the Dock, add this to your config. It's off by default.
+
+```elisp
+(setq switchboard-open-at-startup t)
+```
+
 ![The new-session menu, with options for a worktree, name, first prompt and agent](docs/screenshots/new-session.png)
 
 Sessions use their own settings, so your global Claude Code and Codex configuration isn't changed. New worktrees go in `~/.worktrees/`; set `switchboard-worktree-directory` to change that. `M-x customize-group RET switchboard` lists the other options.
