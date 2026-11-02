@@ -36,7 +36,7 @@ Switchboard is developed on macOS. It hasn't been tried on Linux, where its noti
 ## Requirements
 
 - Emacs 30.1 or newer with SVG and dynamic module support. So far it has only been run on 31.1.
-- [ghostel](https://melpa.org/#/ghostel), from MELPA. It downloads its native module on first use.
+- [ghostel](https://melpa.org/#/ghostel), from MELPA. It needs a native module; see [First session](#first-session).
 - At least one of `claude`, `codex` or `pi`.
 - `git`.
 
@@ -144,6 +144,30 @@ To have Emacs open on the list when it starts without a file or directory to ope
 Sessions use their own settings, so your global Claude Code and Codex configuration isn't changed. New worktrees go in `~/.worktrees/`; set `switchboard-worktree-directory` to change that. `M-x customize-group RET switchboard` lists the other options.
 
 **Codex.** Codex skips hooks until you trust them, so run `/hooks` in a Codex session once. You need to do this again if Switchboard's folder moves. Until then, Switchboard falls back to Codex's `notify`, which shows less detail.
+
+## First session
+
+The first time you start a session, ghostel asks what to do about its native module. Press `d` to download a pre-built one. The session's row already says READY at this point, and the agent starts once the download finishes.
+
+To skip the question, add this to your config:
+
+```elisp
+(setq ghostel-module-auto-install 'download)
+```
+
+## What Switchboard adds to your agents
+
+Switchboard changes how it starts each agent. These changes apply only to sessions it starts, and there's no setting to turn them off yet.
+
+| Agent | What it adds |
+| --- | --- |
+| Claude Code | Hooks that report events, a line in the system prompt about `sb`, and permission to run `sb` without asking |
+| Codex | Hooks and `notify` that report events, a line in its developer instructions about `sb`, and write access to Switchboard's request folder for `sb` |
+| Pi | An extension that reports events, and a line in the system prompt about `sb` |
+
+**Helpers.** Because of this, an agent can start other agents on its own, and under Claude Code it won't ask you first. Helpers can start helpers one level down, and a session and its helpers can have 10 running at once. Permission prompts still come to you, because `sb send` refuses to answer them.
+
+**Your data.** Hook events go from the agent to Emacs on your machine. Switchboard itself sends nothing elsewhere, except that `gh` asks GitHub about each session's pull request if you have it installed.
 
 ## Tests
 
