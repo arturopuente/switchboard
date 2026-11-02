@@ -103,7 +103,7 @@ Add MELPA to `package-archives` first, so that ghostel can be installed. `SPC` i
 
 ```elisp
 (use-package switchboard
-  :vc (:url "https://github.com/arturopuente/switchboard")
+  :vc (:url "https://github.com/arturopuente/switchboard" :rev :newest)
   :bind (("C-c e e" . switchboard)
          ("C-c e w" . switchboard-toggle-focus)
          ("C-c e c" . switchboard-new)
