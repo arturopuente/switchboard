@@ -86,7 +86,12 @@
 (defvar ghostel-kill-buffer-on-exit)
 (defvar ghostel-query-before-killing)
 (defvar ghostel-shell)
+(defvar ghostel--term)
 (defvar savehist-additional-variables)
+(declare-function project-root "project")
+;; Used before their definitions below.
+(defvar switchboard--recent)
+(defvar switchboard--sb-directory)
 
 (defgroup switchboard nil
   "A vertical list of agent sessions in ghostel terminals."
