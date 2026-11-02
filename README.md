@@ -54,25 +54,24 @@ brew install jq terminal-notifier gh
 
 ## Install
 
-Add MELPA to `package-archives` first, so that ghostel can be installed.
+Switchboard doesn't bind any global keys itself. The bindings below are the suggested layout, so copy them or change them as you like.
 
-With `use-package` (Emacs 30 or newer):
+| Key | Command | What it does |
+| --- | --- | --- |
+| `SPC e e` | `switchboard` | Show the session list |
+| `SPC e c` | `switchboard-new` | Start a new session |
+| `SPC e w` | `switchboard-toggle-focus` | Move between the list and the terminal |
+| `SPC e n` | `switchboard-next-attention` | Go to the next session that needs you |
+| `SPC e r` | `switchboard-resume-all` | Resume all sessions |
+| `SPC e s` | `switchboard-shell` | Toggle a shell in the session's worktree |
+| `SPC e z` | `switchboard-zoom` | Zoom the agent or its shell |
+| `Cmd-{` | `switchboard-previous-session` | Go to the previous session |
+| `Cmd-}` | `switchboard-next-session` | Go to the next session |
+| `Cmd-Shift-Return` | `switchboard-zoom` | Zoom the agent or its shell |
 
-```elisp
-(use-package switchboard
-  :vc (:url "https://github.com/arturopuente/switchboard")
-  :bind (("C-c e e" . switchboard)
-         ("C-c e c" . switchboard-new)
-         ("C-c e w" . switchboard-toggle-focus)
-         ("C-c e n" . switchboard-next-attention)
-         ("C-c e r" . switchboard-resume-all)
-         ("C-c e s" . switchboard-shell)
-         ("C-c e z" . switchboard-zoom)
-         ("s-{"     . switchboard-previous-session)
-         ("s-}"     . switchboard-next-session)))
-```
+### Doom
 
-With Doom, in `packages.el`:
+In `packages.el`:
 
 ```elisp
 (package! switchboard
@@ -80,18 +79,41 @@ With Doom, in `packages.el`:
            :files ("switchboard.el" "switchboard-hook.sh" "switchboard-pi.ts" "bin")))
 ```
 
-Then run `doom sync`, and bind the same commands in `config.el`:
+Then run `doom sync`, and add the bindings to `config.el`:
 
 ```elisp
+(map! "s-{" #'switchboard-previous-session
+      "s-}" #'switchboard-next-session
+      "s-S-<return>" #'switchboard-zoom)
+
 (map! :leader
       (:prefix ("e" . "agents")
-       :desc "Session list"        "e" #'switchboard
-       :desc "New session"         "c" #'switchboard-new
-       :desc "List <-> terminal"   "w" #'switchboard-toggle-focus
-       :desc "Next needing you"    "n" #'switchboard-next-attention
-       :desc "Resume all sessions" "r" #'switchboard-resume-all
-       :desc "Shell in worktree"   "s" #'switchboard-shell
-       :desc "Zoom agent/shell"    "z" #'switchboard-zoom))
+       :desc "Session list"         "e" #'switchboard
+       :desc "List <-> terminal"    "w" #'switchboard-toggle-focus
+       :desc "New session"          "c" #'switchboard-new
+       :desc "Next needing you"     "n" #'switchboard-next-attention
+       :desc "Resume all sessions"  "r" #'switchboard-resume-all
+       :desc "Shell in worktree"    "s" #'switchboard-shell
+       :desc "Zoom agent/shell"     "z" #'switchboard-zoom))
+```
+
+### Other setups
+
+Add MELPA to `package-archives` first, so that ghostel can be installed. `SPC` is only a leader key in Doom and similar setups, so this uses the same letters under `C-c e`. With `use-package` (Emacs 30 or newer):
+
+```elisp
+(use-package switchboard
+  :vc (:url "https://github.com/arturopuente/switchboard")
+  :bind (("C-c e e" . switchboard)
+         ("C-c e w" . switchboard-toggle-focus)
+         ("C-c e c" . switchboard-new)
+         ("C-c e n" . switchboard-next-attention)
+         ("C-c e r" . switchboard-resume-all)
+         ("C-c e s" . switchboard-shell)
+         ("C-c e z" . switchboard-zoom)
+         ("s-{" . switchboard-previous-session)
+         ("s-}" . switchboard-next-session)
+         ("s-S-<return>" . switchboard-zoom)))
 ```
 
 ## macOS setup
